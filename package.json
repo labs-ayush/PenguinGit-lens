@@ -1,0 +1,138 @@
+{
+  "name": "penguingit-lens",
+  "displayName": "PenguinGit Lens",
+  "description": "Inline blame, commit graph, file history, and hover cards powered by PenguinGit Engine",
+  "version": "0.1.0",
+  "publisher": "penguingit",
+  "author": "Ayush Singh <pratyushextra123456@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ayush442842q/PenguinGit-lens"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Git",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "pnpm build",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "tsc -p ./",
+    "test": "tsc -p ./ && node dist/test/engineClient.test.js",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "penguingit.startEngine",
+        "title": "PenguinGit: Start Engine Daemon",
+        "icon": "$(play)"
+      },
+      {
+        "command": "penguingit.checkStatus",
+        "title": "PenguinGit: Check Engine Status",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "penguingit.openDesktop",
+        "title": "PenguinGit: Open in Desktop App",
+        "icon": "$(desktop-download)"
+      },
+      {
+        "command": "penguingit.interactiveRebase",
+        "title": "PenguinGit: Interactive Rebase in Desktop App",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "penguingit.resolveConflicts",
+        "title": "PenguinGit: Resolve Merge Conflicts in Desktop App",
+        "icon": "$(alert)"
+      },
+      {
+        "command": "penguingit.viewFileHistory",
+        "title": "PenguinGit: View File History",
+        "icon": "$(history)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "penguingit-lens",
+          "title": "PenguinGit Lens",
+          "icon": "$(pulse)"
+        }
+      ]
+    },
+    "views": {
+      "penguingit-lens": [
+        {
+          "type": "webview",
+          "id": "penguingit-lens.commitGraph",
+          "name": "Commit Graph"
+        },
+        {
+          "id": "penguingit-lens.fileHistory",
+          "name": "File History"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "penguingit.viewFileHistory",
+          "group": "7_git@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "penguingit.viewFileHistory",
+          "group": "7_git@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "PenguinGit Lens",
+      "properties": {
+        "penguingit.enableInlineBlame": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline current-line blame ghost text"
+        },
+        "penguingit.ghostTextFormat": {
+          "type": "string",
+          "default": "${author}, ${age} • ${summary}",
+          "description": "Format for inline blame ghost text (${author}, ${age}, ${summary}, ${hash})"
+        },
+        "penguingit.socketPath": {
+          "type": "string",
+          "default": "/tmp/penguingit-mcp.sock",
+          "description": "Path to local PenguinGit Engine Unix domain socket"
+        },
+        "penguingit.tcpPort": {
+          "type": "number",
+          "default": 34284,
+          "description": "TCP port for PenguinGit Engine (used on Windows or fallback)"
+        },
+        "penguingit.useTcp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Force connection over TCP instead of Unix domain socket"
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "^5.4.5"
+  }
+}

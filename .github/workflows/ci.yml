@@ -38,6 +38,11 @@ jobs:
       - name: Symlink PenguinGit to parent directory
         run: ln -s $(pwd)/PenguinGit ../PenguinGit
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev pkg-config
+
       - name: Build daemon binary
         run: cargo build --bin penguingit-mcp
         working-directory: PenguinGit

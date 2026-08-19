@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
   blameDecorator = new BlameDecorator(engineClient);
   fileHistoryProvider = new FileHistoryProvider(engineClient);
 
-  context.subscriptions.push(statusBarManager, blameDecorator);
+  context.subscriptions.push(statusBarManager, blameDecorator, fileHistoryProvider);
 
   // Register Hover Provider
   context.subscriptions.push(

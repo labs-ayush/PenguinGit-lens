@@ -33,11 +33,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: labs-ayush/Penguin-Git
-          path: ../PenguinGit
+          path: PenguinGit
+
+      - name: Symlink PenguinGit to parent directory
+        run: ln -s $(pwd)/PenguinGit ../PenguinGit
 
       - name: Build daemon binary
         run: cargo build --bin penguingit-mcp
-        working-directory: ../PenguinGit
+        working-directory: PenguinGit
 
       - name: Run unit tests
         run: pnpm test

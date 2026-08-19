@@ -108,6 +108,7 @@ export class EngineClient extends EventEmitter {
 
       this.socket.on('error', (err: Error) => {
         this.handleError(err);
+        resolve(false);
       });
 
       this.socket.on('close', () => {
@@ -122,6 +123,7 @@ export class EngineClient extends EventEmitter {
             this.pendingRequests.delete('init');
             initRequest.reject(new Error('Connection closed during initialization'));
           }
+          resolve(false);
         }
       });
     });

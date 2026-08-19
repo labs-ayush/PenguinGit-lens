@@ -31,6 +31,3 @@ jobs:
 
       - name: Run type checks
         run: pnpm test
-
-      - name: Package VSIX extension
-        run: pnpm package

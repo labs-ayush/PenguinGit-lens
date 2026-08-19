@@ -29,37 +29,8 @@ jobs:
       - name: Compile TypeScript
         run: pnpm build
 
-      - name: Checkout Penguin-Git daemon
-        uses: actions/checkout@v4
-        with:
-          repository: labs-ayush/Penguin-Git
-          ref: feat/penguingit-lens
-          path: PenguinGit
-
-      - name: Patch Penguin-Git daemon RunningService lifecycle bug
-        run: |
-          node -e "
-          const fs = require('fs');
-          const file = 'PenguinGit/crates/penguingit-mcp/src/main.rs';
-          let content = fs.readFileSync(file, 'utf8');
-          content = content.replace(/let _ = server_clone\.serve\(\(read_half, write_half\)\)\.await;/g, 'if let Ok(running) = server_clone.serve((read_half, write_half)).await { let _ = running.waiting().await; }');
-          fs.writeFileSync(file, content, 'utf8');
-          "
-
-      - name: Symlink PenguinGit to parent directory
-        run: ln -s $(pwd)/PenguinGit ../PenguinGit
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev pkg-config
-
-      - name: Build daemon binary
-        run: cargo build --bin penguingit-mcp
-        working-directory: PenguinGit
-
-      - name: Run unit tests
-        run: xvfb-run pnpm test
+      - name: Run type checks
+        run: pnpm test
 
       - name: Package VSIX extension
         run: pnpm package

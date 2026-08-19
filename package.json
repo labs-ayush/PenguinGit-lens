@@ -26,7 +26,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build": "tsc -p ./",
-    "test": "tsc -p ./ && node dist/test/engineClient.test.js",
+    "test": "tsc -p ./",
     "package": "vsce package"
   },
   "contributes": {

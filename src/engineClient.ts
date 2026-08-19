@@ -58,9 +58,48 @@ export class EngineClient extends EventEmitter {
         : { path: this.options.socketPath ?? '/tmp/penguingit-mcp.sock' };
 
       this.socket = net.createConnection(connectionOpts, () => {
-        this.isConnected = true;
-        this.emit('connected');
-        resolve(true);
+        // Send MCP initialize request
+        const initReq = {
+          jsonrpc: '2.0',
+          id: 'init',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: {
+              name: 'penguingit-lens',
+              version: '0.1.0',
+            },
+          },
+        };
+
+        this.pendingRequests.set('init', {
+          resolve: () => {
+            // Send MCP initialized notification
+            const initializedNotification = {
+              jsonrpc: '2.0',
+              method: 'notifications/initialized',
+            };
+            try {
+              this.socket?.write(JSON.stringify(initializedNotification) + '\n');
+              this.isConnected = true;
+              this.emit('connected');
+              resolve(true);
+            } catch (err) {
+              resolve(false);
+            }
+          },
+          reject: () => {
+            resolve(false);
+          },
+        });
+
+        try {
+          this.socket!.write(JSON.stringify(initReq) + '\n');
+        } catch (err) {
+          this.pendingRequests.delete('init');
+          resolve(false);
+        }
       });
 
       this.socket.on('data', (chunk: Buffer) => {
@@ -68,10 +107,8 @@ export class EngineClient extends EventEmitter {
       });
 
       this.socket.on('error', (err: Error) => {
-        if (!this.isConnected) {
-          resolve(false);
-        }
         this.handleError(err);
+        resolve(false);
       });
 
       this.socket.on('close', () => {
@@ -80,6 +117,13 @@ export class EngineClient extends EventEmitter {
         this.socket = null;
         if (wasConnected) {
           this.emit('disconnected');
+        } else {
+          const initRequest = this.pendingRequests.get('init');
+          if (initRequest) {
+            this.pendingRequests.delete('init');
+            initRequest.reject(new Error('Connection closed during initialization'));
+          }
+          resolve(false);
         }
       });
     });

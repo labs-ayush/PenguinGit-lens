@@ -51,11 +51,23 @@ graph TD
    ```
 3. Package `.vsix` release:
    ```bash
-   npx @vscode/vsce package --no-dependencies
+   pnpm package
    ```
+
+---
+
+## 📚 Documentation & Community
+
+- 🏛️ [Architecture](docs/ARCHITECTURE.md) — Technical design, components, and shared engine model.
+- 🤝 [Contributing Guidelines](docs/CONTRIBUTING.md) — Setup instructions, ground rules, and PR checklist.
+- 🗺️ [Roadmap](docs/ROADMAP.md) — Multi-phase build plan and development milestones.
+- 📜 [Changelog](docs/CHANGELOG.md) — Version history and release notes.
+- 🛡️ [Security Policy](docs/SECURITY.md) — Vulnerability reporting and security design.
+- 📜 [Code of Conduct](docs/CODE_OF_CONDUCT.md) — Community standards and enforcement policies.
 
 ---
 
 ## 📜 License
 
 MIT © [Ayush Singh (@Ayush442842q)](https://github.com/Ayush442842q/PenguinGit-lens)
+

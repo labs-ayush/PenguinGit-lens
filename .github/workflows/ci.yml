@@ -36,6 +36,16 @@ jobs:
           ref: feat/penguingit-lens
           path: PenguinGit
 
+      - name: Patch Penguin-Git daemon RunningService lifecycle bug
+        run: |
+          node -e "
+          const fs = require('fs');
+          const file = 'PenguinGit/crates/penguingit-mcp/src/main.rs';
+          let content = fs.readFileSync(file, 'utf8');
+          content = content.replace(/let _ = server_clone\.serve\(\(read_half, write_half\)\)\.await;/g, 'if let Ok(running) = server_clone.serve((read_half, write_half)).await { let _ = running.waiting().await; }');
+          fs.writeFileSync(file, content, 'utf8');
+          "
+
       - name: Symlink PenguinGit to parent directory
         run: ln -s $(pwd)/PenguinGit ../PenguinGit
 

@@ -48,7 +48,7 @@ jobs:
         working-directory: PenguinGit
 
       - name: Run unit tests
-        run: pnpm test
+        run: xvfb-run pnpm test
 
       - name: Package VSIX extension
         run: pnpm package

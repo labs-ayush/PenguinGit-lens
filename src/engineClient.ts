@@ -115,14 +115,21 @@ export class EngineClient extends EventEmitter {
         const wasConnected = this.isConnected;
         this.isConnected = false;
         this.socket = null;
+
+        // Reject every in-flight request so callers never hang indefinitely.
+        const closeError = new Error(
+          wasConnected
+            ? 'PenguinGit IPC connection closed unexpectedly'
+            : 'Connection closed during initialization'
+        );
+        for (const [, { reject: rejectPending }] of this.pendingRequests) {
+          rejectPending(closeError);
+        }
+        this.pendingRequests.clear();
+
         if (wasConnected) {
           this.emit('disconnected');
         } else {
-          const initRequest = this.pendingRequests.get('init');
-          if (initRequest) {
-            this.pendingRequests.delete('init');
-            initRequest.reject(new Error('Connection closed during initialization'));
-          }
           resolve(false);
         }
       });

@@ -29,6 +29,16 @@ jobs:
       - name: Compile TypeScript
         run: pnpm build
 
+      - name: Checkout Penguin-Git daemon
+        uses: actions/checkout@v4
+        with:
+          repository: labs-ayush/Penguin-Git
+          path: ../PenguinGit
+
+      - name: Build daemon binary
+        run: cargo build --bin penguingit-mcp
+        working-directory: ../PenguinGit
+
       - name: Run unit tests
         run: pnpm test
 

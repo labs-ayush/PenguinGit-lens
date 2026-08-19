@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: labs-ayush/Penguin-Git
+          ref: feat/penguingit-lens
           path: PenguinGit
 
       - name: Symlink PenguinGit to parent directory

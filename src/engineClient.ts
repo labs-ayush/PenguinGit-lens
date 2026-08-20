@@ -25,6 +25,10 @@ export interface EngineClientOptions {
   socketPath?: string;
   tcpPort?: number;
   useTcp?: boolean;
+  autoReconnect?: boolean;
+  maxRetries?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
 }
 
 export class EngineClient extends EventEmitter {
@@ -34,6 +38,10 @@ export class EngineClient extends EventEmitter {
   private requestCounter = 0;
   private buffer = '';
   private options: EngineClientOptions;
+  private isManualDisconnect: boolean = false;
+  private isReconnecting: boolean = false;
+  private reconnectAttempt: number = 0;
+  private reconnectTimer: NodeJS.Timeout | null = null;
 
   constructor(options: EngineClientOptions = {}) {
     super();
@@ -43,10 +51,20 @@ export class EngineClient extends EventEmitter {
       socketPath: options.socketPath || '/tmp/penguingit-mcp.sock',
       tcpPort: options.tcpPort || 34284,
       useTcp: options.useTcp ?? process.platform === 'win32',
+      autoReconnect: options.autoReconnect ?? true,
+      maxRetries: options.maxRetries ?? 10,
+      initialDelayMs: options.initialDelayMs ?? 1000,
+      maxDelayMs: options.maxDelayMs ?? 30000,
     };
   }
 
   public connect(): Promise<boolean> {
+    this.isManualDisconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     return new Promise((resolve) => {
       if (this.socket) {
         this.socket.destroy();
@@ -117,6 +135,9 @@ export class EngineClient extends EventEmitter {
         this.socket = null;
         if (wasConnected) {
           this.emit('disconnected');
+          if (!this.isManualDisconnect && this.options.autoReconnect) {
+            this.scheduleReconnect();
+          }
         } else {
           const initRequest = this.pendingRequests.get('init');
           if (initRequest) {
@@ -129,13 +150,64 @@ export class EngineClient extends EventEmitter {
     });
   }
 
+  private scheduleReconnect(): void {
+    if (this.isManualDisconnect || !this.options.autoReconnect) {
+      return;
+    }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.options.maxRetries !== undefined && this.reconnectAttempt >= this.options.maxRetries) {
+      this.isReconnecting = false;
+      return;
+    }
+
+    this.isReconnecting = true;
+    this.reconnectAttempt++;
+
+    const initial = this.options.initialDelayMs ?? 1000;
+    const max = this.options.maxDelayMs ?? 30000;
+    const delayMs = Math.min(initial * Math.pow(2, this.reconnectAttempt - 1), max);
+
+    this.emit('reconnecting', { attempt: this.reconnectAttempt, delayMs });
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      if (this.isManualDisconnect) return;
+
+      const success = await this.connect();
+      if (success) {
+        this.reconnectAttempt = 0;
+        this.isReconnecting = false;
+        this.emit('reconnected');
+      } else {
+        if (!this.isManualDisconnect && this.options.autoReconnect) {
+          this.scheduleReconnect();
+        }
+      }
+    }, delayMs);
+  }
+
   public disconnect(): void {
+    this.isManualDisconnect = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.isReconnecting = false;
+    this.reconnectAttempt = 0;
+
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
     }
+    const wasConnected = this.isConnected;
     this.isConnected = false;
-    this.emit('disconnected');
+    if (wasConnected) {
+      this.emit('disconnected');
+    }
   }
 
   public updateOptions(options: Partial<EngineClientOptions>): void {
@@ -154,6 +226,10 @@ export class EngineClient extends EventEmitter {
 
   public checkConnection(): boolean {
     return this.isConnected;
+  }
+
+  public getIsReconnecting(): boolean {
+    return this.isReconnecting;
   }
 
   private handleData(data: string): void {

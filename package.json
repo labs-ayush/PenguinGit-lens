@@ -4,6 +4,16 @@
   "description": "Inline blame, commit graph, file history, and hover cards powered by PenguinGit Engine",
   "version": "0.1.0",
   "publisher": "penguingit",
+  "icon": "resources/icon.png",
+  "keywords": [
+    "git",
+    "blame",
+    "history",
+    "graph",
+    "penguingit",
+    "mcp",
+    "vscode-extension"
+  ],
   "author": "Ayush Singh <pratyushextra123456@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -14,15 +24,14 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Git",
-    "Other"
+    "Git"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "scripts": {
-    "vscode:prepublish": "pnpm build",
+    "vscode:prepublish": "tsc --noEmit && pnpm build",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build": "tsc -p ./",
@@ -60,6 +69,18 @@
         "command": "penguingit.viewFileHistory",
         "title": "PenguinGit: View File History",
         "icon": "$(history)"
+      },
+      {
+        "command": "penguingit.toggleInlineBlame",
+        "title": "PenguinGit: Toggle Inline Blame",
+        "icon": "$(git-commit)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "penguingit.toggleInlineBlame",
+        "key": "alt+b",
+        "mac": "alt+b"
       }
     ],
     "viewsContainers": {
@@ -104,7 +125,12 @@
         "penguingit.enableInlineBlame": {
           "type": "boolean",
           "default": true,
-          "description": "Show inline current-line blame ghost text"
+          "description": "Enable inline current-line blame ghost text"
+        },
+        "penguingit.inlineBlameColor": {
+          "type": "string",
+          "default": "",
+          "description": "Custom color for inline blame ghost text (e.g. '#888888' or theme color ID like 'editorCodeLens.foreground')"
         },
         "penguingit.ghostTextFormat": {
           "type": "string",

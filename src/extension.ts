@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
   blameDecorator = new BlameDecorator(engineClient);
   fileHistoryProvider = new FileHistoryProvider(engineClient);
 
-  context.subscriptions.push(statusBarManager, blameDecorator);
+  context.subscriptions.push(statusBarManager, blameDecorator, fileHistoryProvider);
 
   // Reconnect EngineClient on configuration change
   context.subscriptions.push(

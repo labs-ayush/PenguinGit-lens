@@ -1,15 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { EngineClient } from './engineClient';
-
-export interface BlameLine {
-  hash: string;
-  authorName: string;
-  timestamp: number;
-  lineNumber: number;
-  content: string;
-  summary: string;
-}
+import { BlameLine, formatRelativeTime } from './utils';
+export { BlameLine };
 
 export class BlameDecorator implements vscode.Disposable {
   private engineClient: EngineClient;
@@ -142,7 +135,7 @@ export class BlameDecorator implements vscode.Disposable {
         text = 'Uncommitted changes';
       } else {
         const formatStr = config.get<string>('ghostTextFormat', '${author}, ${age} • ${summary}');
-        const age = this.formatRelativeTime(matchingLine.timestamp);
+        const age = formatRelativeTime(matchingLine.timestamp);
         text = formatStr
           .replace('${author}', matchingLine.authorName)
           .replace('${age}', age)
@@ -242,28 +235,6 @@ export class BlameDecorator implements vscode.Disposable {
     if (target) {
       target.setDecorations(this.decorationType, []);
     }
-  }
-
-  // #35: Guard formatRelativeTime against 0, invalid, or NaN timestamps (return 'unknown')
-  private formatRelativeTime(timestampSec: number): string {
-    if (
-      typeof timestampSec !== 'number' ||
-      Number.isNaN(timestampSec) ||
-      timestampSec <= 0 ||
-      !Number.isFinite(timestampSec)
-    ) {
-      return 'unknown';
-    }
-    const nowSec = Math.floor(Date.now() / 1000);
-    const diffSec = nowSec - timestampSec;
-    if (diffSec < 0) return 'unknown';
-
-    if (diffSec < 60) return 'just now';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    if (diffSec < 2592000) return `${Math.floor(diffSec / 86400)}d ago`;
-    if (diffSec < 31536000) return `${Math.floor(diffSec / 2592000)}mo ago`;
-    return `${Math.floor(diffSec / 31536000)}y ago`;
   }
 
   public dispose(): void {

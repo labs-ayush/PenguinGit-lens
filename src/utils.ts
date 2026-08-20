@@ -19,9 +19,17 @@ export interface BlameLine {
  * Formats a Unix timestamp in seconds to a human-readable relative time string.
  */
 export function formatRelativeTime(timestampSec: number): string {
-  if (!timestampSec) return 'unknown';
+  if (
+    typeof timestampSec !== 'number' ||
+    Number.isNaN(timestampSec) ||
+    timestampSec <= 0 ||
+    !Number.isFinite(timestampSec)
+  ) {
+    return 'unknown';
+  }
   const nowSec = Math.floor(Date.now() / 1000);
   const diffSec = nowSec - timestampSec;
+  if (diffSec < 0) return 'unknown';
 
   if (diffSec < 60) return 'just now';
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;

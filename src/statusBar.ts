@@ -9,20 +9,25 @@ export class StatusBarManager implements vscode.Disposable {
     this.engineClient = engineClient;
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
-      100
+      200
     );
 
     this.statusBarItem.command = 'penguingit.showMenu';
 
     this.engineClient.on('connected', () => this.updateStatus(true));
     this.engineClient.on('disconnected', () => this.updateStatus(false));
+    this.engineClient.on('reconnecting', () => this.updateStatus('reconnecting'));
 
     this.updateStatus(false);
     this.statusBarItem.show();
   }
 
-  public updateStatus(connected: boolean): void {
-    if (connected) {
+  public updateStatus(status: boolean | 'reconnecting'): void {
+    if (status === 'reconnecting') {
+      this.statusBarItem.text = '$(sync~spin) Reconnecting...';
+      this.statusBarItem.tooltip = 'Reconnecting to PenguinGit Engine...';
+      this.statusBarItem.backgroundColor = undefined;
+    } else if (status) {
       this.statusBarItem.text = '$(plug) PenguinGit: Connected';
       this.statusBarItem.tooltip = 'PenguinGit Engine is connected and active';
       this.statusBarItem.backgroundColor = undefined;

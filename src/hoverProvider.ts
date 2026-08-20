@@ -1,20 +1,27 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { EngineClient } from './engineClient';
-import { BlameLine } from './blameDecorator';
+import { BlameLine, formatRelativeTime, escapeMarkdown } from './utils';
 
 export class CommitHoverProvider implements vscode.HoverProvider {
   private engineClient: EngineClient;
+  private blameCache: Map<string, { lines: BlameLine[]; mtime: number }> = new Map();
+  private readonly CACHE_TTL_MS = 10000; // 10s TTL
 
   constructor(engineClient: EngineClient) {
     this.engineClient = engineClient;
+
+    this.engineClient.on('repo-changed', () => {
+      this.blameCache.clear();
+    });
   }
 
   public async provideHover(
     document: vscode.TextDocument,
     position: vscode.Position
   ): Promise<vscode.Hover | null> {
-    if (document.uri.scheme !== 'file') return null;
+    // Guard against virtual documents, output channels, and untitled documents (#66)
+    if (document.uri.scheme !== 'file' || document.isUntitled) return null;
 
     const config = vscode.workspace.getConfiguration('penguingit');
     if (!config.get<boolean>('enableInlineBlame', true)) return null;
@@ -24,14 +31,14 @@ export class CommitHoverProvider implements vscode.HoverProvider {
     if (!repoPath) return null;
 
     const relativePath = path.relative(repoPath, filePath);
-    const lineNumber = position.line + 1; // 1-indexed
+
+    // Clamp line position safely to valid document range to prevent EOF failures (#68)
+    if (document.lineCount === 0) return null;
+    const clampedLine = Math.max(0, Math.min(position.line, document.lineCount - 1));
+    const lineNumber = clampedLine + 1; // 1-indexed
 
     try {
-      const blameLines: BlameLine[] = await this.engineClient.callTool('git_blame', {
-        repo_path: repoPath,
-        file_path: relativePath,
-      });
-
+      const blameLines = await this.getBlameData(repoPath, relativePath);
       if (!Array.isArray(blameLines)) return null;
 
       const matching = blameLines.find((b) => b.lineNumber === lineNumber);
@@ -45,24 +52,98 @@ export class CommitHoverProvider implements vscode.HoverProvider {
       }
 
       const shortHash = matching.hash.substring(0, 7);
-      const ageStr = this.formatRelativeTime(matching.timestamp);
+      const ageStr = formatRelativeTime(matching.timestamp);
+
+      // Collect branch ref badges when available (#67)
+      const refBadges: string[] = [];
+      if (typeof matching.branch === 'string' && matching.branch) {
+        refBadges.push(matching.branch);
+      }
+      if (Array.isArray(matching.branches)) {
+        for (const b of matching.branches) {
+          if (typeof b === 'string' && b && !refBadges.includes(b)) {
+            refBadges.push(b);
+          }
+        }
+      }
+      if (Array.isArray(matching.refs)) {
+        for (const r of matching.refs) {
+          if (typeof r === 'string' && r && !refBadges.includes(r)) {
+            refBadges.push(r);
+          }
+        }
+      } else if (typeof matching.refs === 'string' && matching.refs && !refBadges.includes(matching.refs)) {
+        refBadges.push(matching.refs);
+      }
+      if (typeof matching.ref === 'string' && matching.ref && !refBadges.includes(matching.ref)) {
+        refBadges.push(matching.ref);
+      }
+
+      const badgeStr = refBadges.length > 0
+        ? ' &nbsp; ' + refBadges.map((b) => `\`$(git-branch) ${escapeMarkdown(b)}\``).join(' ')
+        : '';
+
+      // Format author display with email if available (#63)
+      const authorDisplay = matching.authorEmail
+        ? `${escapeMarkdown(matching.authorName)} &lt;${escapeMarkdown(matching.authorEmail)}&gt;`
+        : escapeMarkdown(matching.authorName);
+
+      // Sanitize special Markdown characters in commit summary (#69)
+      const sanitizedSummary = escapeMarkdown(matching.summary || '');
+
+      // Create encoded URIs for command links (#62, #65)
+      const encodedDocUri = encodeURIComponent(JSON.stringify([document.uri]));
+      const leftUri = document.uri.with({ query: `ref=${matching.hash}~1` });
+      const rightUri = document.uri.with({ query: `ref=${matching.hash}` });
+      const diffTitle = `${path.basename(filePath)} (${shortHash})`;
+      const encodedDiffArgs = encodeURIComponent(JSON.stringify([leftUri, rightUri, diffTitle]));
 
       const md = new vscode.MarkdownString();
       md.isTrusted = true;
-      md.appendMarkdown(`### 🐧 PenguinGit Commit Details\n\n`);
-      md.appendMarkdown(`**Commit**: \`${shortHash}\` (${matching.hash})\n\n`);
-      md.appendMarkdown(`**Author**: ${matching.authorName} (${ageStr})\n\n`);
+      md.supportThemeIcons = true;
+      md.appendMarkdown(`### 🐧 PenguinGit Commit Details${badgeStr}\n\n`);
+      md.appendMarkdown(`**Commit**: \`${shortHash}\` (\`${matching.hash}\`)\n\n`);
+      md.appendMarkdown(`**Author**: ${authorDisplay} (${ageStr})\n\n`);
       md.appendMarkdown(`---\n\n`);
-      md.appendMarkdown(`**Summary**: ${matching.summary}\n\n`);
+      md.appendMarkdown(`**Summary**: ${sanitizedSummary}\n\n`);
+
+      // Use language specifier / codeblock formatting for commit code snippets (#61)
+      if (matching.content !== undefined && matching.content !== null && matching.content.trim() !== '') {
+        md.appendCodeblock(matching.content, document.languageId);
+        md.appendMarkdown(`\n`);
+      }
+
       md.appendMarkdown(`---\n\n`);
       md.appendMarkdown(
-        `[📜 View File History](command:penguingit.viewFileHistory) &nbsp;|&nbsp; [🖥️ Open Desktop App](command:penguingit.openDesktop)`
+        `[🔍 View Diff](command:vscode.diff?${encodedDiffArgs}) &nbsp;|&nbsp; ` +
+        `[📜 View File History](command:penguingit.viewFileHistory?${encodedDocUri}) &nbsp;|&nbsp; ` +
+        `[🖥️ Open Desktop App](command:penguingit.openDesktop)`
       );
 
       return new vscode.Hover(md);
     } catch {
       return null;
     }
+  }
+
+  private async getBlameData(repoPath: string, relativePath: string): Promise<BlameLine[]> {
+    const cacheKey = `${repoPath}:${relativePath}`;
+    const cached = this.blameCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.mtime < this.CACHE_TTL_MS) {
+      return cached.lines;
+    }
+
+    const result: BlameLine[] = await this.engineClient.callTool('git_blame', {
+      repo_path: repoPath,
+      file_path: relativePath,
+    });
+
+    if (Array.isArray(result)) {
+      this.blameCache.set(cacheKey, { lines: result, mtime: Date.now() });
+      return result;
+    }
+    return [];
   }
 
   private findRepoPath(filePath: string): string | null {
@@ -73,18 +154,5 @@ export class CommitHoverProvider implements vscode.HoverProvider {
       if (filePath.startsWith(f.uri.fsPath)) return f.uri.fsPath;
     }
     return path.dirname(filePath);
-  }
-
-  private formatRelativeTime(timestampSec: number): string {
-    if (!timestampSec) return 'unknown';
-    const nowSec = Math.floor(Date.now() / 1000);
-    const diffSec = nowSec - timestampSec;
-
-    if (diffSec < 60) return 'just now';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    if (diffSec < 2592000) return `${Math.floor(diffSec / 86400)}d ago`;
-    if (diffSec < 31536000) return `${Math.floor(diffSec / 2592000)}mo ago`;
-    return `${Math.floor(diffSec / 31536000)}y ago`;
   }
 }

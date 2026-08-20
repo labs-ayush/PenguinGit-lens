@@ -145,6 +145,20 @@ export class EngineClient extends EventEmitter {
     this.emit('disconnected');
   }
 
+  public updateOptions(options: Partial<EngineClientOptions>): void {
+    this.options = { ...this.options, ...options };
+  }
+
+  public async reconnect(): Promise<boolean> {
+    this.emit('reconnecting');
+    this.disconnect();
+    return this.connect();
+  }
+
+  public dispose(): void {
+    this.disconnect();
+  }
+
   public checkConnection(): boolean {
     return this.isConnected;
   }

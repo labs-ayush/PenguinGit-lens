@@ -69,6 +69,18 @@
         "command": "penguingit.viewFileHistory",
         "title": "PenguinGit: View File History",
         "icon": "$(history)"
+      },
+      {
+        "command": "penguingit.toggleInlineBlame",
+        "title": "PenguinGit: Toggle Inline Blame",
+        "icon": "$(git-commit)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "penguingit.toggleInlineBlame",
+        "key": "alt+b",
+        "mac": "alt+b"
       }
     ],
     "viewsContainers": {
@@ -113,7 +125,7 @@
         "penguingit.enableInlineBlame": {
           "type": "boolean",
           "default": true,
-          "description": "Show inline current-line blame ghost text"
+          "description": "Enable inline current-line blame ghost text"
         },
         "penguingit.ghostTextFormat": {
           "type": "string",

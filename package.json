@@ -4,6 +4,16 @@
   "description": "Inline blame, commit graph, file history, and hover cards powered by PenguinGit Engine",
   "version": "0.1.0",
   "publisher": "penguingit",
+  "icon": "resources/icon.png",
+  "keywords": [
+    "git",
+    "blame",
+    "history",
+    "graph",
+    "penguingit",
+    "mcp",
+    "vscode-extension"
+  ],
   "author": "Ayush Singh <pratyushextra123456@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -14,15 +24,14 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Git",
-    "Other"
+    "Git"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "scripts": {
-    "vscode:prepublish": "pnpm build",
+    "vscode:prepublish": "tsc --noEmit && pnpm build",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build": "tsc -p ./",

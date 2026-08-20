@@ -20,9 +20,19 @@ Unlike extensions that re-implement Git parsing from scratch in TypeScript, Peng
 
 ```mermaid
 graph TD
+    classDef client fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef transport fill:#1e293b,stroke:#fbbf24,stroke-width:2px,color:#f8fafc;
+    classDef engine fill:#1e293b,stroke:#34d399,stroke-width:2px,color:#f8fafc;
+    classDef storage fill:#1e293b,stroke:#f43f5e,stroke-width:2px,color:#f8fafc;
+
     VSCode["VS Code (PenguinGit Lens Extension)"] <--> Socket["Unix Domain Socket / TCP"]
     Socket <--> Engine["PenguinGit Engine Daemon (penguingit-mcp)"]
     Engine <--> Git["Git Repository on Disk"]
+
+    class VSCode client;
+    class Socket transport;
+    class Engine engine;
+    class Git storage;
 ```
 
 ---

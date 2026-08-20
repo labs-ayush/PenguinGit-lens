@@ -16,7 +16,7 @@ PenguinGit Lens is being developed as a high-performance, open-source VS Code ex
 | 1 | Core IPC Engine Client & Inline Blame | EngineClient socket connection, auto-reconnect, and current-line blame ghost text | ✅ Done |
 | 2 | Commit Hover Cards & Commit Graph Webview | Rich Markdown commit hover popups and responsive webview DAG commit graph | ✅ Done |
 | 3 | File History & Desktop App Handoff | File revision tree view and `penguingit://` deep links to Desktop app for conflict resolution and interactive rebase | ✅ Done |
-| 4 | CI/CD & Marketplace Packaging | Automated VSIX builds, CodeQL security scanning, and Marketplace publish preparation | 🚧 In Progress |
+| 4 | CI/CD & Marketplace Packaging | Automated VSIX builds, CodeQL security scanning, and Marketplace publish preparation | ✅ Done |
 
 ## Detailed Breakdown
 
@@ -38,7 +38,8 @@ PenguinGit Lens is being developed as a high-performance, open-source VS Code ex
 - [x] Right-click file history context menu integration
 - [x] Deep-link launcher for Desktop app interactive rebase & 3-way merge conflict editor
 
-### Phase 4 — CI/CD & Packaging 🚧
-- [x] GitHub Actions CI workflow for TypeScript verification
+### Phase 4 — CI/CD & Packaging ✅
+- [x] GitHub Actions CI workflow for TypeScript verification and VSIX artifact build
 - [x] CodeQL and Gitleaks security scanners
-- [ ] VS Code Marketplace automated publishing pipeline
+- [x] VS Code Marketplace & Open VSX automated publishing pipeline (`.github/workflows/publish.yml`)
+- [x] VSIX packaging configuration (`.vscodeignore`, `pnpm package`)

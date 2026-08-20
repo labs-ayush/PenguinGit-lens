@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build & Test
+    name: Build, Test & Package
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +31,13 @@ jobs:
 
       - name: Run type checks
         run: pnpm test
+
+      - name: Package VSIX Extension
+        run: pnpm package
+
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: penguingit-lens-vsix
+          path: "*.vsix"
+          if-no-files-found: error

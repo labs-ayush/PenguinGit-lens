@@ -1,0 +1,9 @@
+.vscode/**
+.github/**
+src/**
+test/**
+.gitignore
+tsconfig.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+*.vsix

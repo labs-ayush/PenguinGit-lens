@@ -47,7 +47,7 @@ jobs:
           ovsx_token: ${{ secrets.OVSX_PAT }}
 
       - name: Attach VSIX to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         with:
           files: "*.vsix"

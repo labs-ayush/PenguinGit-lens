@@ -21,7 +21,7 @@
     "url": "https://github.com/Ayush442842q/PenguinGit-lens"
   },
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.136.0"
   },
   "categories": [
     "Git"
